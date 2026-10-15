@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcards</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Mono:wght@500&family=Inter+Tight:wght@400..700&display=swap">
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
+  <style type="text/tailwindcss">
+    /* Design tokens. Palette is taken from a physical index card:
+       desk (kraft), card stock (cream), ink, graphite, the red header rule,
+       and the blue writing lines. Contrast (WCAG AA) checked:
+       ink/desk 12.3, graphite/desk 5.3, white/margin 5.8, margin-ink/desk 5.8. */
+    @theme {
+      --color-desk: #ebe5d6;
+      --color-card: #fffdf7;
+      --color-ink: #1f2430;
+      --color-graphite: #575d6b;
+      --color-margin: #b8372b;
+      --color-margin-ink: #9e2e24;
+      --color-rule: #c5d6e6;
+      --color-edge: #cbc1ab; /* decorative card edges only, never text */
+
+      --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+      --font-sans: "Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    @layer base {
+      html {
+        background: var(--color-desk);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        font-size: 100%;
+        -webkit-font-smoothing: antialiased;
+      }
+      body { min-height: 100dvh; line-height: 1.6; }
+      a { color: inherit; }
+      :focus-visible {
+        outline: 3px solid var(--color-ink);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      [tabindex="-1"]:focus { outline: none; }
+    }
+
+    @layer components {
+      /* ---- Layout ---- */
+      .page {
+        width: 100%;
+        max-width: 72rem;
+        margin-inline: auto;
+        padding-inline: 1rem;
+      }
+      @media (min-width: 768px) { .page { padding-inline: 2rem; } }
+
+      .site-header { padding-block: 1.25rem; }
+      .wordmark {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.25rem;
+        letter-spacing: -0.01em;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.625rem;
+        min-height: 44px;
+      }
+      .wordmark::before {
+        /* a tiny index card: cream with a red top rule */
+        content: "";
+        width: 1.5rem;
+        height: 1rem;
+        background: linear-gradient(var(--color-card) 0 4px, var(--color-margin) 4px 6px, var(--color-card) 6px);
+        box-shadow: 0 0 0 1px var(--color-edge), 3px 3px 0 0 var(--color-card), 3px 3px 0 1px var(--color-edge);
+        border-radius: 2px;
+      }
+
+      #app { padding-bottom: 5rem; }
+
+      /* ---- Type ---- */
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-graphite);
+      }
+      .title {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: clamp(2.25rem, 1.6rem + 3vw, 4rem);
+        line-height: 1.02;
+        letter-spacing: -0.025em;
+        overflow-wrap: anywhere;
+      }
+      .subhead {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.375rem;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+      }
+      .meta {
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--color-graphite);
+      }
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+        text-decoration-color: var(--color-edge);
+      }
+      .back-link:hover { text-decoration-color: currentColor; }
+
+      /* ---- Buttons (all at least 44px tall) ---- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 44px;
+        padding: 0.5rem 1.125rem;
+        border: 2px solid var(--color-ink);
+        border-radius: 6px;
+        font-weight: 600;
+        line-height: 1.2;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 100ms ease, box-shadow 100ms ease, background-color 120ms ease;
+        white-space: nowrap;
+      }
+      /* Primary: red like the header rule, with a hard "card edge" offset
+         that presses flat on click. The only button with a shadow. */
+      .btn-primary {
+        background: var(--color-margin);
+        border-color: var(--color-ink);
+        color: #fff;
+        box-shadow: 3px 3px 0 0 var(--color-ink);
+      }
+      .btn-primary:hover { background: var(--color-margin-ink); }
+      .btn-primary:active { transform: translate(3px, 3px); box-shadow: 0 0 0 0 var(--color-ink); }
+      .btn-secondary { background: var(--color-card); color: var(--color-ink); }
+      .btn-secondary:hover { background: var(--color-desk); }
+      .btn-quiet {
+        border-color: transparent;
+        background: transparent;
+        color: var(--color-graphite);
+        padding-inline: 0.75rem;
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+      }
+      .btn-quiet:hover { color: var(--color-ink); }
+      .btn-danger { background: transparent; border-color: var(--color-margin-ink); color: var(--color-margin-ink); }
+      .btn-danger:hover { background: var(--color-margin-ink); color: #fff; }
+
+      /* ---- Forms ---- */
+      .field-label { display: block; font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.375rem; }
+      .field {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: 0.5rem 0.75rem;
+        background: var(--color-card);
+        border: 2px solid var(--color-graphite);
+        border-radius: 6px;
+        font: inherit;
+        color: var(--color-ink);
+      }
+      .field:focus { border-color: var(--color-ink); }
+      textarea.field { min-height: 5.5rem; resize: vertical; }
+      .field-row { display: flex; flex-wrap: wrap; gap: 0.625rem; }
+      .field-row .field { flex: 1 1 14rem; width: auto; }
+      /* Space reserved so an error appearing doesn't shove the layout. */
+      .form-error { min-height: 1.5rem; margin-top: 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--color-margin-ink); }
+      .form-actions { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 0.75rem; }
+
+      /* ---- Index card: the signature element ----
+         A cream card with a header band, the red rule under it, and blue
+         writing lines. Text in .card-text sits on those lines because its
+         line-height equals the line spacing. */
+      .index-card {
+        --head: 2.75rem;
+        --line: 2rem;
+        position: relative;
+        background-color: var(--color-card);
+        background-image:
+          linear-gradient(to bottom,
+            var(--color-card) 0 calc(var(--head) - 2px),
+            var(--color-margin) calc(var(--head) - 2px) var(--head),
+            transparent var(--head)),
+          repeating-linear-gradient(to bottom,
+            transparent 0 calc(var(--line) - 1px),
+            var(--color-rule) calc(var(--line) - 1px) var(--line));
+        background-position: 0 0, 0 var(--head);
+        background-repeat: no-repeat, repeat;
+        border-radius: 3px;
+        box-shadow: 0 0 0 1px var(--color-edge);
+        padding: 0 1rem calc(var(--line) / 2);
+      }
+      .card-head {
+        height: calc(var(--head) - 2px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+      .card-text {
+        font-family: var(--font-display);
+        font-size: 1.125rem;
+        line-height: var(--line);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .card-blank {
+        /* an empty state: a card outline with nothing written on it */
+        border: 2px dashed var(--color-edge);
+        border-radius: 3px;
+        padding: 1.5rem 1rem;
+        color: var(--color-graphite);
+      }
+
+      /* Deck stacks: how many cards sit behind the top one reflects the deck
+         (0, 1, or 2+ cards), so the decoration says something true. */
+      .stack-1 {
+        box-shadow: 0 0 0 1px var(--color-edge),
+          5px 5px 0 0 var(--color-card), 5px 5px 0 1px var(--color-edge);
+      }
+      .stack-2 {
+        box-shadow: 0 0 0 1px var(--color-edge),
+          5px 5px 0 0 var(--color-card), 5px 5px 0 1px var(--color-edge),
+          10px 10px 0 0 var(--color-card), 10px 10px 0 1px var(--color-edge);
+      }
+
+      /* ---- Home ---- */
+      .home-head { display: grid; gap: 1.5rem; padding-block: 1.5rem 2.5rem; align-items: end; }
+      @media (min-width: 1024px) { .home-head { grid-template-columns: 1fr minmax(22rem, 28rem); gap: 3rem; } }
+      .deck-grid { display: grid; gap: 1.75rem 1.5rem; grid-template-columns: 1fr; padding-right: 10px; }
+      @media (min-width: 640px) { .deck-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (min-width: 1024px) { .deck-grid { grid-template-columns: repeat(3, 1fr); } }
+      .deck-name { font-family: var(--font-display); font-weight: 600; font-size: 1.25rem; line-height: 1.2; overflow-wrap: anywhere; }
+      /* Deck tile: a plain index card (no writing lines) with the deck name
+         above the red rule, like a label written in the card's header. */
+      .deck-tile { background: var(--color-card); border-radius: 3px; padding: 0 1rem 1rem; display: flex; flex-direction: column; }
+      .deck-tile:not(.stack-1):not(.stack-2) { box-shadow: 0 0 0 1px var(--color-edge); }
+      .deck-tile .deck-name { padding-block: 0.875rem 0.625rem; border-bottom: 2px solid var(--color-margin); }
+      .deck-tile .meta { padding-top: 0.625rem; }
+      .deck-actions { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: auto; padding-top: 1rem; }
+
+      /* ---- Manage ---- */
+      .manage-head { padding-block: 0.5rem 2rem; }
+      .manage-layout { display: grid; gap: 2.5rem; grid-template-areas: "add" "list" "settings"; }
+      @media (min-width: 1024px) {
+        .manage-layout {
+          grid-template-columns: 1fr minmax(20rem, 24rem);
+          grid-template-areas: "list add" "list settings";
+          grid-template-rows: auto 1fr;
+          column-gap: 3rem;
+        }
+        .area-add { position: sticky; top: 1rem; }
+      }
+      .area-add { grid-area: add; }
+      .area-list { grid-area: list; }
+      .area-list > h2 { margin-bottom: 1rem; }
+      .area-settings { grid-area: settings; align-self: start; }
+      .panel { background: var(--color-card); border-radius: 3px; box-shadow: 0 0 0 1px var(--color-edge); padding: 1.25rem; }
+      .panel > * + * { margin-top: 0.75rem; }
+      .settings-divider { border: 0; border-top: 1px solid var(--color-edge); margin-block: 1.25rem; }
+      .card-list { display: grid; gap: 1.25rem; counter-reset: card; }
+      .card-sides { display: grid; gap: 0.25rem 1.5rem; }
+      @media (min-width: 640px) { .card-sides { grid-template-columns: 1fr 1fr; } }
+      .side-label { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-graphite); line-height: var(--line); }
+      .row-actions { display: flex; gap: 0.25rem; margin-left: auto; }
+      .card-edit { padding-block: 1rem; background: var(--color-card); }
+      .card-form-fields { display: grid; gap: 0.75rem; }
+      @media (min-width: 640px) { .card-edit .card-form-fields { grid-template-columns: 1fr 1fr; } }
+
+      /* ---- Study ---- */
+      .study { max-width: 46rem; margin-inline: auto; }
+      .study-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 0.5rem 1.5rem; padding-block: 0.5rem 1.25rem; }
+      .study-head .title { font-size: clamp(1.875rem, 1.4rem + 2vw, 2.75rem); }
+      .progress { height: 4px; background: var(--color-edge); border-radius: 2px; overflow: hidden; margin-bottom: 1.5rem; }
+      .progress > span { display: block; height: 100%; background: var(--color-ink); }
+      .study-card {
+        --head: 3rem;
+        --line: 2.25rem;
+        min-height: calc(var(--head) + var(--line) * 6);
+        padding-inline: 1.25rem;
+      }
+      .study-card .card-text { font-size: 1.5rem; padding-top: calc(var(--line) * 0.5); }
+      /* Roughly index-card proportions, but a min-height (not aspect-ratio)
+         so a long answer grows the card instead of spilling out of it. */
+      @media (min-width: 640px) {
+        .study-card { --head: 3.5rem; --line: 2.75rem; min-height: clamp(18rem, 40vw, 27rem); padding-inline: 2rem; }
+        .study-card .card-text { font-size: 2rem; }
+      }
+      .study-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.75rem; }
+      .study-controls .btn-primary { min-width: 9rem; }
+      .study-controls .btn-quiet { margin-left: auto; }
+      .shortcuts { margin-top: 1rem; }
+      .shortcuts kbd {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        padding: 0.0625rem 0.375rem;
+        border: 1px solid var(--color-graphite);
+        border-radius: 4px;
+        background: var(--color-card);
+      }
+      /* Shortcut hint only where there's a keyboard to use it. */
+      @media (hover: none) { .shortcuts { display: none; } }
+
+      /* The one orchestrated motion: the card turns over on Flip. */
+      .study-stage { perspective: 1400px; }
+      @media (prefers-reduced-motion: no-preference) {
+        .flip-in { animation: flip-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1); transform-origin: center; }
+        @keyframes flip-in {
+          from { transform: rotateY(-90deg); }
+          to { transform: rotateY(0); }
+        }
+      }
+    }
+  </style>
+
+  <script type="module" src="./dist/app.js"></script>
+</head>
+<body>
+  <header class="page site-header">
+    <a class="wordmark" href="#/">Flashcards</a>
+  </header>
+  <main id="app" class="page"></main>
+  <!-- Outside #app so re-renders never replace it; screen readers only
+       announce changes to a live region that already exists. -->
+  <p id="announcer" class="sr-only" aria-live="polite"></p>
+</body>
+</html>
